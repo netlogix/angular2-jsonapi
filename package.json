@@ -6,7 +6,7 @@
     "name": "stephan.schuler@netlogix.de"
   },
   "license": "MIT",
-  "dependencies": {
+  "peerDependencies": {
     "@angular/core": "2.0.0-rc.2",
     "@angular/http": "2.0.0-rc.2"
   },
