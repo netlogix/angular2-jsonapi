@@ -1,14 +1,12 @@
-import { Type } from "./type";
-import { Payload } from "./payload";
+import { Observable } from "rxjs/Rx";
+import { Type, Payload } from "../../";
 export declare abstract class ResourceProxy {
     static _typeName: string;
     static _properties: any;
-    protected _type: Type;
-    protected _payload: Payload;
-    private _propertyValue;
-    private _relationshipLoaded;
-    private _relatedDataLoaded;
-    private _propertyBasedCacheState;
+    private _type;
+    private _payload;
+    private _relatedDataLoadedSubject;
+    private _relatedDataLoadedObservable;
     $type: Type;
     $identity: {
         id: string;
@@ -16,18 +14,23 @@ export declare abstract class ResourceProxy {
     };
     toString(): string;
     constructor();
-    payload: any;
-    offsetLoadedEvent(propertyName: any): Promise<any>;
-    private getLoadedEventPrimiseAndResolver(propertyName);
+    payload: Payload;
     offsetExists(propertyName: any): boolean;
     offsetGet(propertyName: any): any;
+    offsetGetLoaded(propertyName: string): Promise<{}>;
+    offsetGetAsync(propertyName: string): (Observable<ResourceProxy | ResourceProxy[]>);
     offsetSet(propertyName: any, value: any): void;
+    loadRelationship(propertyName: string): Observable<ResourceProxy | ResourceProxy[]>;
     private offsetGetForAttribute(propertyName);
     private offsetGetForSingleRelationship(propertyName);
-    private offsetGetForCollectionelationship(propertyName);
-    private loadRelationship(propertyName);
+    private offsetGetForCollectionRelationship(propertyName);
+    private getRelationshipPayloadData(propertyName);
     private offsetSetForAttribute(propertyName, value);
     private offsetSetForSingleRelationship(propertyName, value);
     private offsetSetForCollectionelationship(propertyName, value);
-    private resetPropertyBasedCaches();
+    private registerTypeName();
+    private registerEventEmitters();
+    private emitRelationshipLoaded(propertyName);
+    private getRelationshipLoadedSubject(propertyName);
+    private getRelationshipLoadedObservable(propertyName);
 }

@@ -1,3 +1,4 @@
+import { EventEmitter } from '@angular/core';
 export interface Payload {
     id?: string;
     type: string;
@@ -13,4 +14,5 @@ export interface Payload {
     meta?: {
         [propertyName: string]: any;
     };
+    propertyChanged?: EventEmitter<string>;
 }

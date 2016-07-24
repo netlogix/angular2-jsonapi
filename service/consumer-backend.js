@@ -1,8 +1,7 @@
 "use strict";
 var http_1 = require('@angular/http');
 var Rx_1 = require("rxjs/Rx");
-var uri_1 = require("../domain/model/uri");
-var property_1 = require("../domain/model/property");
+var _1 = require("../");
 var ConsumerBackend = (function () {
     function ConsumerBackend(http, requestOptions) {
         this.http = http;
@@ -10,247 +9,228 @@ var ConsumerBackend = (function () {
         this.types = {};
         this.typeObservables = {};
         this.headers = {};
-        this.resources = {};
+        this.unitOfWork = {};
     }
     ConsumerBackend.prototype.addType = function (type) {
         type.consumerBackend = this;
         this.types[type.getTypeName()] = type;
     };
-    ConsumerBackend.prototype.getType = function (typeName) {
-        return this.types[typeName];
-    };
-    ConsumerBackend.prototype.getTypeObservable = function (typeName) {
-        var _this = this;
-        if (!this.typeObservables[typeName]) {
-            this.typeObservables[typeName] = {
-                observable: false,
-                subscriber: false
-            };
-            var observable_1 = Rx_1.Observable.create(function (subscriber) {
-                _this.typeObservables[typeName].observable = observable_1;
-                _this.typeObservables[typeName].subscriber = subscriber;
-            });
-            observable_1.subscribe();
-        }
-        return this.typeObservables[typeName];
-    };
-    ConsumerBackend.prototype.getTypePromise = function (typeName) {
-        var _this = this;
-        if (!this.typeObservables[typeName]) {
-            this.typeObservables[typeName] = {
-                promise: false,
-                resolve: false
-            };
-            var promise = new Promise(function (resolve) {
-                _this.typeObservables[typeName].resolve = resolve;
-            });
-            this.typeObservables[typeName].promise = promise;
-        }
-        return this.typeObservables[typeName];
-    };
     ConsumerBackend.prototype.registerEndpointsByEndpointDiscovery = function (endpointDiscovery) {
         var _this = this;
-        this.requestJson(endpointDiscovery).then(function (result) {
-            for (var _i = 0, _a = result['links']; _i < _a.length; _i++) {
-                var link = _a[_i];
-                if (!(link instanceof Object) || !link.meta) {
-                    continue;
+        return new Promise(function (resolve) {
+            _this.requestJson(endpointDiscovery).subscribe(function (result) {
+                for (var _i = 0, _a = result['links']; _i < _a.length; _i++) {
+                    var link = _a[_i];
+                    if (!(link instanceof Object) || !link.meta) {
+                        continue;
+                    }
+                    if (!link.meta.type || link.meta.type !== 'resourceUri') {
+                        continue;
+                    }
+                    if (!link.meta.resourceType) {
+                        continue;
+                    }
+                    if (!link.href) {
+                        continue;
+                    }
+                    var typeName = link.meta.resourceType;
+                    var type = _this.types[typeName];
+                    if (!type || type.getUri()) {
+                        continue;
+                    }
+                    var typeObservable = _this.getType(typeName);
+                    type.setUri(new _1.Uri(link.href));
+                    typeObservable.next(type);
+                    typeObservable.complete();
                 }
-                if (!link.meta.type || link.meta.type !== 'resourceUri') {
-                    continue;
+                resolve();
+            });
+        });
+    };
+    ConsumerBackend.prototype.closeEndpointDiscovery = function () {
+        for (var typeName in this.types) {
+            var type = this.types[typeName];
+            if (!type.getUri()) {
+                var typeObservable = this.getType(typeName);
+                type.setUri(new _1.Uri('#'));
+                typeObservable.next(type);
+                typeObservable.complete();
+            }
+        }
+    };
+    ConsumerBackend.prototype.fetchFromUri = function (queryUri) {
+        var _this = this;
+        return this.requestJson(queryUri).map(function (jsonResult) {
+            _this.addJsonResultToCache(jsonResult);
+            if (!jsonResult.data) {
+                return [];
+            }
+            if (!!jsonResult.data.type && !!jsonResult.data.id) {
+                return [_this.getFromUnitOfWork(jsonResult.data.type, jsonResult.data.id)];
+            }
+            else {
+                var result = [];
+                for (var _i = 0, _a = jsonResult['data']; _i < _a.length; _i++) {
+                    var resourceDefinition = _a[_i];
+                    var resource = _this.getFromUnitOfWork(resourceDefinition.type, resourceDefinition.id);
+                    if (resource) {
+                        result.push(resource);
+                    }
                 }
-                if (!link.meta.resourceType) {
-                    continue;
-                }
-                if (!link.href) {
-                    continue;
-                }
-                var typeName = link.meta.resourceType;
-                var type = _this.getType(typeName);
-                if (!type) {
-                    continue;
-                }
-                type.setUri(new uri_1.Uri(link.href));
-                _this.getTypePromise(typeName).resolve(type);
+                return result;
             }
         });
     };
     ConsumerBackend.prototype.findByTypeAndFilter = function (typeName, filter, include) {
         var _this = this;
-        if (!filter) {
-            filter = {};
-        }
-        if (!include) {
-            include = [];
-        }
-        return new Promise(function (resolve) {
-            var subscription = function (x) {
-                var type = _this.getType(typeName);
-                var queryUri = type.getUri();
-                var queryArguments = queryUri.getArguments();
-                queryArguments['filter'] = queryArguments['filter'] || {};
-                for (var key in filter) {
-                    var value = filter[key];
-                    queryArguments['filter'][key] = value;
-                }
-                if (queryArguments['filter'] == {}) {
-                    delete queryArguments['filter'];
-                }
-                queryArguments['include'] = include.join(',');
-                if (!queryArguments['include']) {
-                    delete queryArguments['include'];
-                }
-                queryUri.setArguments(queryArguments);
-                _this.fetchFromUri(queryUri).then(function (result) {
-                    resolve(result);
-                });
-            };
-            _this.getTypePromise(typeName).promise.then(subscription);
-        });
+        return this.getType(typeName).map(function (type) {
+            var queryUri = type.getUri();
+            var queryArguments = queryUri.getArguments();
+            queryArguments['filter'] = queryArguments['filter'] || {};
+            for (var key in (filter || {})) {
+                queryArguments['filter'][key] = filter[key];
+            }
+            if (queryArguments['filter'] == {}) {
+                delete queryArguments['filter'];
+            }
+            queryArguments['include'] = (include || []).join(',');
+            if (!queryArguments['include']) {
+                delete queryArguments['include'];
+            }
+            queryUri.setArguments(queryArguments);
+            return _this.fetchFromUri(queryUri);
+        }).flatMap(function (value) { return value; });
     };
-    ConsumerBackend.prototype.fetchFromUri = function (queryUri) {
-        var _this = this;
-        return new Promise(function (resolve) {
-            _this.requestJson(queryUri).then(function (jsonResult) {
-                _this.addJsonResultToCache(jsonResult);
-                if (!jsonResult.data) {
-                    resolve([]);
-                    return;
-                }
-                if (!!jsonResult.data.type && !!jsonResult.data.id) {
-                    resolve(_this.getResourceProxyFromCache(jsonResult.data.type, jsonResult.data.id));
-                    return;
-                }
-                else {
-                    var result = [];
-                    for (var _i = 0, _a = jsonResult['data']; _i < _a.length; _i++) {
-                        var resourceDefinition = _a[_i];
-                        var resource = _this.getResourceProxyFromCache(resourceDefinition.type, resourceDefinition.id);
-                        if (resource) {
-                            result.push(resource);
-                        }
-                    }
-                    resolve(result);
-                    return;
-                }
-            });
-        });
-    };
-    ConsumerBackend.prototype.fetchByTypeAndId = function (type, id) {
-        var _this = this;
-        return new Promise(function (resolve) {
-            resolve(_this.getResourceProxyFromCache(type, id));
-        });
-    };
-    ConsumerBackend.prototype.getPlaceholderForTypeAndId = function (placeholder, type, id) {
-        var _this = this;
-        return new Promise(function (resolve) {
-            _this.fetchByTypeAndId(type, id).then(function (object) {
-                Object.setPrototypeOf(placeholder, object);
-                resolve(placeholder);
-            });
-        });
+    ConsumerBackend.prototype.getFromUnitOfWork = function (type, id) {
+        var cacheIdentifier = this.calculateCacheIdentifier(type, id);
+        return this.unitOfWork[cacheIdentifier];
     };
     ConsumerBackend.prototype.add = function (resource) {
         var _this = this;
-        var requestOptions = this.requestOptions.merge({});
-        return new Promise(function (resolve) {
-            var postBody = {
-                data: resource.payload
-            };
-            _this.http.post(resource.$type.getUri().toString(), JSON.stringify(postBody), _this.getRequestOptions('post')).subscribe(function (response) {
+        return new Promise(function (resolve, reject) {
+            var postBody = JSON.stringify({ data: resource.payload });
+            var targetUri = resource.$type.getUri().toString();
+            _this.http.post(targetUri, postBody, _this.getRequestOptions('post')).subscribe(function (response) {
                 resolve(response);
+            }, function (response) {
+                reject(response);
             });
         });
+    };
+    ConsumerBackend.prototype.create = function (type, id, defaultValue, initializeEmptyRelationships) {
+        if (defaultValue === void 0) { defaultValue = {}; }
+        if (initializeEmptyRelationships === void 0) { initializeEmptyRelationships = true; }
+        this.addJsonResultToCache({ data: { type: type, id: id } }, initializeEmptyRelationships);
+        var result = this.getFromUnitOfWork(type, id);
+        for (var propertyName in defaultValue) {
+            result.offsetSet(propertyName, defaultValue[propertyName]);
+        }
+        return result;
+    };
+    ConsumerBackend.prototype.getType = function (typeName) {
+        if (!this.typeObservables[typeName]) {
+            this.typeObservables[typeName] = new Rx_1.AsyncSubject();
+        }
+        return this.typeObservables[typeName];
     };
     ConsumerBackend.prototype.requestJson = function (uri) {
-        var _this = this;
         var uriString = uri.toString();
         var requestOptions = this.getRequestOptions('get', uriString);
-        var headers = JSON.stringify(requestOptions.headers.toJSON());
-        var cacheIdentifier = JSON.stringify(headers) + '|' + uriString;
-        return new Promise(function (resolve) {
-            _this.http.get(uriString, requestOptions).subscribe(function (result) {
-                var body = result.text();
-                resolve(JSON.parse(body));
-            });
+        return this.http.get(uriString, requestOptions).map(function (result) {
+            var body = result.text();
+            return JSON.parse(body);
         });
     };
-    ConsumerBackend.prototype.addJsonResultToCache = function (result) {
+    ConsumerBackend.prototype.addJsonResultToCache = function (result, initializeEmptyRelationships) {
+        var _this = this;
+        if (initializeEmptyRelationships === void 0) { initializeEmptyRelationships = false; }
+        var postProcessing = [];
         for (var _i = 0, _a = ['data', 'included']; _i < _a.length; _i++) {
             var slotName = _a[_i];
             if (!result[slotName]) {
                 continue;
             }
-            for (var _b = 0, _c = result[slotName]; _b < _c.length; _b++) {
-                var resourceDefinition = _c[_b];
+            var slotContent = [];
+            if (result[slotName].hasOwnProperty('id') && result[slotName].hasOwnProperty('type')) {
+                slotContent = [result[slotName]];
+            }
+            else {
+                slotContent = result[slotName];
+            }
+            var _loop_1 = function(resourceDefinition) {
                 var typeName = resourceDefinition.type;
                 var id = resourceDefinition.id;
-                var type = this.getType(typeName);
-                if (!type) {
-                    continue;
-                }
-                var resource = this.getResourceProxyFromCache(typeName, id);
-                if (!resource) {
-                    resource = type.createNewObject(this);
-                    var cacheIdentifier = this.calculateCacheIdentifier(typeName, id);
-                    this.resources[cacheIdentifier] = resource;
-                    resource.payload = {
-                        id: id,
-                        type: typeName,
-                        attributes: {},
-                        relationships: {},
-                        links: {},
-                        meta: {}
-                    };
-                }
-                this.assignResourceDefinitionToPayload(resource.payload, resourceDefinition, type);
+                this_1.getType(typeName).subscribe(function (type) {
+                    var resource = _this.getFromUnitOfWork(typeName, id);
+                    if (!resource) {
+                        resource = type.createNewObject(_this, initializeEmptyRelationships);
+                        var cacheIdentifier = _this.calculateCacheIdentifier(typeName, id);
+                        _this.unitOfWork[cacheIdentifier] = resource;
+                        resource.payload.id = id;
+                    }
+                    postProcessing = postProcessing.concat(_this.assignResourceDefinitionToPayload(resource.payload, resourceDefinition, type));
+                });
+            };
+            var this_1 = this;
+            for (var _b = 0, slotContent_1 = slotContent; _b < slotContent_1.length; _b++) {
+                var resourceDefinition = slotContent_1[_b];
+                _loop_1(resourceDefinition);
             }
         }
+        postProcessing.forEach(function (callable) {
+            callable();
+        });
     };
     ConsumerBackend.prototype.assignResourceDefinitionToPayload = function (payload, resourceDefinition, type) {
+        var postProcessing = [];
         if (resourceDefinition.hasOwnProperty('links')) {
             payload.links = Object.assign(payload.links, resourceDefinition.links);
         }
         if (resourceDefinition.hasOwnProperty('meta')) {
             payload.meta = Object.assign(payload.meta, resourceDefinition.meta);
         }
-        for (var propertyName in type.getProperties()) {
+        var _loop_2 = function(propertyName) {
             var property = type.getPropertyDefinition(propertyName);
-            if (property.type === property_1.Property.ATTRIBUTE_TYPE) {
+            if (property.type === _1.Property.ATTRIBUTE_TYPE) {
                 if (!resourceDefinition.hasOwnProperty('attributes')) {
-                    continue;
+                    return "continue";
                 }
                 if (!resourceDefinition.attributes.hasOwnProperty(property.name)) {
-                    continue;
+                    return "continue";
                 }
                 payload.attributes[property.name] = resourceDefinition.attributes[property.name];
             }
             else {
                 if (!resourceDefinition.hasOwnProperty('relationships')) {
-                    continue;
+                    return "continue";
                 }
                 if (!resourceDefinition.relationships.hasOwnProperty(property.name)) {
-                    continue;
+                    return "continue";
                 }
-                if (!payload.relationships.hasOwnProperty(property.name) && resourceDefinition.relationships[property.name].hasOwnProperty('links')) {
-                    payload.relationships[property.name] = {
-                        links: {
-                            self: resourceDefinition.relationships[property.name].links.self,
-                            related: resourceDefinition.relationships[property.name].links.related
+                if (!payload.relationships.hasOwnProperty(property.name)) {
+                    payload.relationships[property.name] = {};
+                }
+                if (resourceDefinition.relationships[property.name].hasOwnProperty('links')) {
+                    if (!payload.relationships[property.name].hasOwnProperty('links')) {
+                        payload.relationships[property.name]['links'] = {};
+                        for (var linkName in resourceDefinition.relationships[property.name].links) {
+                            payload.relationships[property.name].links[linkName] = resourceDefinition.relationships[property.name].links[linkName];
                         }
-                    };
+                    }
                 }
-                if (!resourceDefinition.relationships[property.name].hasOwnProperty('data')) {
-                    continue;
+                if (resourceDefinition.relationships[property.name].hasOwnProperty('data')) {
+                    payload.relationships[property.name]['data'] = resourceDefinition.relationships[property.name]['data'];
+                    postProcessing.push(function () {
+                        payload.propertyChanged.emit(property.name);
+                    });
                 }
-                payload.relationships[property.name]['data'] = resourceDefinition.relationships[property.name]['data'];
             }
+        };
+        for (var propertyName in type.getProperties()) {
+            var state_2 = _loop_2(propertyName);
+            if (state_2 === "continue") continue;
         }
-    };
-    ConsumerBackend.prototype.getResourceProxyFromCache = function (type, id) {
-        var cacheIdentifier = this.calculateCacheIdentifier(type, id);
-        return this.resources[cacheIdentifier];
+        return postProcessing;
     };
     ConsumerBackend.prototype.calculateCacheIdentifier = function (type, id) {
         return type + "\n" + id;

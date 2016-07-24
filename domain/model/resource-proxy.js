@@ -1,15 +1,11 @@
 "use strict";
-var property_1 = require("./property");
+var Rx_1 = require("rxjs/Rx");
+var _1 = require("../../");
 var ResourceProxy = (function () {
     function ResourceProxy() {
-        this._propertyValue = {};
-        this._relationshipLoaded = {};
-        this._relatedDataLoaded = {};
-        this._propertyBasedCacheState = '';
-        this._type = this.constructor['_type'];
-        if (!this._type) {
-            throw 'This object is not registered as jsonapi resource: ' + this.constructor;
-        }
+        this._relatedDataLoadedSubject = {};
+        this._relatedDataLoadedObservable = {};
+        this.registerTypeName();
         this._type.registerAccessesors(this);
         this.payload = this._type.getPayloadTemplate();
     }
@@ -38,155 +34,198 @@ var ResourceProxy = (function () {
             return this._payload;
         },
         set: function (payload) {
+            var _this = this;
             this._payload = payload;
+            this.registerEventEmitters();
+            this._payload.propertyChanged.subscribe(function (propertyName) {
+                _this.emitRelationshipLoaded(propertyName);
+            });
         },
         enumerable: true,
         configurable: true
     });
-    ResourceProxy.prototype.offsetLoadedEvent = function (propertyName) {
-        return this.getLoadedEventPrimiseAndResolver(propertyName).promise;
-    };
-    ResourceProxy.prototype.getLoadedEventPrimiseAndResolver = function (propertyName) {
-        var _this = this;
-        this.resetPropertyBasedCaches();
-        if (!this._relatedDataLoaded[propertyName]) {
-            this._relatedDataLoaded[propertyName] = {
-                promise: null,
-                resolve: null
-            };
-            this._relatedDataLoaded[propertyName].promise = new Promise(function (resolve) {
-                _this._relatedDataLoaded[propertyName].resolve = resolve;
-            });
-        }
-        return this._relatedDataLoaded[propertyName];
-    };
     ResourceProxy.prototype.offsetExists = function (propertyName) {
         return !!this._type.getPropertyDefinition(propertyName);
     };
     ResourceProxy.prototype.offsetGet = function (propertyName) {
-        this.resetPropertyBasedCaches();
-        if (this._propertyValue[propertyName]) {
-            return this._propertyValue[propertyName];
+        var property = this._type.getPropertyDefinition(propertyName);
+        switch (property.type) {
+            case _1.Property.ATTRIBUTE_TYPE:
+                return this.offsetGetForAttribute(property.name);
+            case _1.Property.SINGLE_RELATIONSHIP_TYPE:
+                return this.offsetGetForSingleRelationship(property.name);
+            case _1.Property.COLLECTION_RELATIONSHIP_TYPE:
+                return this.offsetGetForCollectionRelationship(property.name);
         }
-        else {
-            var result = void 0;
-            var property = this._type.getPropertyDefinition(propertyName);
-            switch (property.type) {
-                case property_1.Property.ATTRIBUTE_TYPE:
-                    result = this.offsetGetForAttribute(property.name);
-                    break;
-                case property_1.Property.SINGLE_RELATIONSHIP_TYPE:
-                    result = this.offsetGetForSingleRelationship(property.name);
-                    break;
-                case property_1.Property.COLLECTION_RELATIONSHIP_TYPE:
-                    result = this.offsetGetForCollectionelationship(property.name);
-                    break;
+    };
+    ResourceProxy.prototype.offsetGetLoaded = function (propertyName) {
+        var _this = this;
+        return new Promise(function (resolve) {
+            try {
+                resolve(_this.offsetGet(propertyName));
             }
-            this._propertyValue[propertyName] = result;
-            return this._propertyValue[propertyName];
-        }
+            catch (e) {
+                var subscription_1 = _this.loadRelationship(propertyName).subscribe(function () {
+                    subscription_1.unsubscribe();
+                    resolve(_this.offsetGet(propertyName));
+                });
+            }
+        });
+    };
+    ResourceProxy.prototype.offsetGetAsync = function (propertyName) {
+        var _this = this;
+        return new Rx_1.Observable(function (observable) {
+            try {
+                observable.next(_this.offsetGet(propertyName));
+            }
+            catch (e) {
+                var subscription_2 = _this.getRelationshipLoadedSubject(propertyName).subscribe(function () {
+                    subscription_2.unsubscribe();
+                    observable.next(_this.offsetGet(propertyName));
+                });
+            }
+        });
     };
     ResourceProxy.prototype.offsetSet = function (propertyName, value) {
         var property = this._type.getPropertyDefinition(propertyName);
         switch (property.type) {
-            case property_1.Property.ATTRIBUTE_TYPE:
+            case _1.Property.ATTRIBUTE_TYPE:
                 this.offsetSetForAttribute(property.name, value);
                 break;
-            case property_1.Property.SINGLE_RELATIONSHIP_TYPE:
+            case _1.Property.SINGLE_RELATIONSHIP_TYPE:
                 this.offsetSetForSingleRelationship(property.name, value);
+                this.emitRelationshipLoaded(property.name);
                 break;
-            case property_1.Property.COLLECTION_RELATIONSHIP_TYPE:
+            case _1.Property.COLLECTION_RELATIONSHIP_TYPE:
                 this.offsetSetForCollectionelationship(property.name, value);
+                this.emitRelationshipLoaded(property.name);
                 break;
         }
-        this.resetPropertyBasedCaches();
+    };
+    ResourceProxy.prototype.loadRelationship = function (propertyName) {
+        var _this = this;
+        var property = this._type.getPropertyDefinition(propertyName);
+        switch (property.type) {
+            case _1.Property.COLLECTION_RELATIONSHIP_TYPE:
+                if (!this._payload['relationships'][property.name].hasOwnProperty('data')) {
+                    this._payload['relationships'][property.name].data = [];
+                }
+                break;
+            case _1.Property.SINGLE_RELATIONSHIP_TYPE:
+                if (!this._payload['relationships'][property.name].hasOwnProperty('data')) {
+                    this._payload['relationships'][property.name].data = null;
+                }
+                break;
+        }
+        return this._type.consumerBackend.fetchFromUri(this._payload['relationships'][property.name]['links']['related']).map(function (results) {
+            switch (property.type) {
+                case _1.Property.COLLECTION_RELATIONSHIP_TYPE:
+                    _this._payload['relationships'][property.name]['data'] = [];
+                    results.forEach(function (option) {
+                        _this._payload['relationships'][property.name]['data'].push(option.$identity);
+                    });
+                    break;
+                case _1.Property.SINGLE_RELATIONSHIP_TYPE:
+                    var result = results[0];
+                    if (result) {
+                        _this._payload['relationships'][property.name]['data'] = result.$identity;
+                    }
+                    else {
+                        _this._payload['relationships'][property.name]['data'] = null;
+                    }
+                    break;
+            }
+            _this.emitRelationshipLoaded(property.name);
+            return _this.offsetGet(propertyName);
+        });
     };
     ResourceProxy.prototype.offsetGetForAttribute = function (propertyName) {
         return this._payload['attributes'][propertyName];
     };
     ResourceProxy.prototype.offsetGetForSingleRelationship = function (propertyName) {
-        var _this = this;
-        var result = {};
-        this.loadRelationship(propertyName).then(function (payload) {
-            _this._type.consumerBackend.getPlaceholderForTypeAndId(result, payload['type'], payload['id']).then(function () {
-                _this.getLoadedEventPrimiseAndResolver(propertyName).resolve(result);
-            });
-        });
-        return result;
+        var payload = this.getRelationshipPayloadData(propertyName);
+        if (payload === null) {
+            return null;
+        }
+        return this._type.consumerBackend.getFromUnitOfWork(payload.type, payload.id);
     };
-    ResourceProxy.prototype.offsetGetForCollectionelationship = function (propertyName) {
+    ResourceProxy.prototype.offsetGetForCollectionRelationship = function (propertyName) {
         var _this = this;
         var results = [];
-        this.loadRelationship(propertyName).then(function () {
-            var queue = [];
-            for (var _i = 0, _a = _this._payload['relationships'][propertyName]['data']; _i < _a.length; _i++) {
-                var payload = _a[_i];
-                var result = {};
-                results.push(result);
-                queue.push(_this._type.consumerBackend.getPlaceholderForTypeAndId(result, payload['type'], payload['id']));
-            }
-            Promise.all(queue).then(function () {
-                _this.getLoadedEventPrimiseAndResolver(propertyName).resolve(results);
-            });
+        var payloads = this.getRelationshipPayloadData(propertyName);
+        (payloads || []).forEach(function (payload) {
+            results.push(_this._type.consumerBackend.getFromUnitOfWork(payload.type, payload.id));
         });
         return results;
     };
-    ResourceProxy.prototype.loadRelationship = function (propertyName) {
-        var _this = this;
-        this.resetPropertyBasedCaches();
-        if (this._relationshipLoaded[propertyName]) {
-            return this._relationshipLoaded[propertyName];
+    ResourceProxy.prototype.getRelationshipPayloadData = function (propertyName) {
+        if (!this._payload.relationships) {
+            throw ["The object has no relationships: ", this].join(' ');
         }
-        if (this._payload['relationships'][propertyName].hasOwnProperty('data') || !this._payload['relationships'][propertyName]['links'].hasOwnProperty('related')) {
-            this._relationshipLoaded[propertyName] = new Promise(function (resolve) {
-                resolve(_this._payload['relationships'][propertyName]['data']);
-            });
-            return this._relationshipLoaded[propertyName];
+        if (!this._payload.relationships.hasOwnProperty(propertyName)) {
+            throw ["The object has no relationship named '", propertyName, "': ", this].join(' ');
         }
-        else {
-            this._relationshipLoaded[propertyName] = new Promise(function (resolve) {
-                if (_this._type.getPropertyDefinition(propertyName).type == property_1.Property.COLLECTION_RELATIONSHIP_TYPE) {
-                    _this._payload['relationships'][propertyName]['data'] = [];
-                    _this._type.consumerBackend.fetchFromUri(_this._payload['relationships'][propertyName]['links']['related']).then(function (results) {
-                        for (var _i = 0, results_1 = results; _i < results_1.length; _i++) {
-                            var option = results_1[_i];
-                            _this._payload['relationships'][propertyName]['data'].push(option.$identity);
-                        }
-                    });
-                    resolve(_this._payload['relationships'][propertyName]['data']);
-                }
-                else if (_this._type.getPropertyDefinition(propertyName).type == property_1.Property.SINGLE_RELATIONSHIP_TYPE) {
-                    _this._type.consumerBackend.fetchFromUri(_this._payload['relationships'][propertyName]['links']['related']).then(function (results) {
-                        _this._payload['relationships'][propertyName]['data'] = results.$identity;
-                    });
-                    resolve(_this._payload['relationships'][propertyName]['data']);
-                }
-            });
-            return this._relationshipLoaded[propertyName];
+        if (!this._payload.relationships[propertyName].hasOwnProperty('data')) {
+            throw ["The object has an unitialized relationship named '", propertyName, "': ", this].join(' ');
         }
+        return this._payload.relationships[propertyName]['data'];
     };
     ResourceProxy.prototype.offsetSetForAttribute = function (propertyName, value) {
         this._payload['attributes'][propertyName] = value;
     };
     ResourceProxy.prototype.offsetSetForSingleRelationship = function (propertyName, value) {
-        this._payload['relationships'][propertyName]['data'] = value.$identity;
+        var identity = value ? value.$identity : null;
+        if (!this._payload['relationships'][propertyName]) {
+            this._payload['relationships'][propertyName] = { data: identity };
+        }
+        else {
+            this._payload['relationships'][propertyName]['data'] = identity;
+        }
     };
     ResourceProxy.prototype.offsetSetForCollectionelationship = function (propertyName, value) {
-        this._payload['relationships'][propertyName]['data'] = [];
+        if (!this._payload['relationships'][propertyName]) {
+            this._payload['relationships'][propertyName] = { data: [] };
+        }
+        else {
+            this._payload['relationships'][propertyName]['data'] = [];
+        }
         for (var _i = 0, value_1 = value; _i < value_1.length; _i++) {
             var object = value_1[_i];
             this._payload['relationships'][propertyName]['data'].push(object.$identity);
         }
     };
-    ResourceProxy.prototype.resetPropertyBasedCaches = function () {
-        var currentState = JSON.stringify(this._payload);
-        if (this._propertyBasedCacheState === currentState) {
-            return;
+    ResourceProxy.prototype.registerTypeName = function () {
+        this._type = this.constructor['_type'];
+        if (!this._type) {
+            throw 'This object is not registered as jsonapi resource: ' + this.constructor;
         }
-        this._propertyValue = {};
-        this._relationshipLoaded = {};
-        this._relatedDataLoaded = {};
-        this._propertyBasedCacheState = currentState;
+    };
+    ResourceProxy.prototype.registerEventEmitters = function () {
+        for (var propertyName in this._type.getProperties()) {
+            var property = this._type.getPropertyDefinition(propertyName);
+            switch (property.type) {
+                case _1.Property.SINGLE_RELATIONSHIP_TYPE:
+                case _1.Property.COLLECTION_RELATIONSHIP_TYPE:
+                    this._relatedDataLoadedSubject[property.name] = new Rx_1.AsyncSubject();
+                    this._relatedDataLoadedObservable[property.name] = this._relatedDataLoadedSubject[property.name].asObservable();
+                    try {
+                        this.offsetGet(propertyName);
+                        this.emitRelationshipLoaded(propertyName);
+                    }
+                    catch (e) {
+                    }
+                    break;
+            }
+        }
+    };
+    ResourceProxy.prototype.emitRelationshipLoaded = function (propertyName) {
+        this.getRelationshipLoadedSubject(this._type.getPropertyDefinition(propertyName).name).next(this.offsetGet(propertyName));
+    };
+    ResourceProxy.prototype.getRelationshipLoadedSubject = function (propertyName) {
+        return this._relatedDataLoadedSubject[propertyName];
+    };
+    ResourceProxy.prototype.getRelationshipLoadedObservable = function (propertyName) {
+        return this._relatedDataLoadedObservable[propertyName];
     };
     ResourceProxy._typeName = 'netlogix/resource';
     ResourceProxy._properties = {};

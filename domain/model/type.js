@@ -1,5 +1,6 @@
 "use strict";
-var property_1 = require("./property");
+var core_1 = require('@angular/core');
+var _1 = require("../../");
 var Type = (function () {
     function Type(typeName, resourceProxy, properties, uri) {
         if (properties === void 0) { properties = {}; }
@@ -17,7 +18,7 @@ var Type = (function () {
         this._uri = uri;
     };
     Type.prototype.getUri = function () {
-        return this._uri.clone();
+        return this._uri ? this._uri.clone() : null;
     };
     Type.prototype.getTypeName = function () {
         return this._typeName;
@@ -25,66 +26,91 @@ var Type = (function () {
     Type.prototype.getResourceProxy = function () {
         return this._resourceProxy;
     };
-    Type.prototype.createNewObject = function (consumerBackend) {
-        return new this._resourceProxy();
+    Type.prototype.createNewObject = function (consumerBackend, initializeEmptyRelationships) {
+        if (initializeEmptyRelationships === void 0) { initializeEmptyRelationships = false; }
+        var payload = this.getPayloadTemplate();
+        var resource = (new this._resourceProxy());
+        var relationships = payload.relationships;
+        if (!initializeEmptyRelationships) {
+            for (var propertyName in relationships) {
+                delete relationships[propertyName].data;
+            }
+        }
+        resource.payload = payload;
+        return resource;
     };
     Type.prototype.getPropertyDefinition = function (propertyName) {
         if (this._properties[propertyName]) {
             return this._properties[propertyName];
         }
         else {
-            return property_1.Property.undefined(propertyName);
+            return _1.Property.undefined(propertyName);
         }
     };
     Type.prototype.getProperties = function () {
         return this._properties;
     };
     Type.prototype.registerAccessesors = function (object) {
-        var payload = object.payload;
-        var _loop_1 = function(propertyName) {
-            var property = this_1._properties[propertyName];
-            Object.defineProperty(object, propertyName, {
-                get: function () {
-                    return object.offsetGet(propertyName);
-                },
-                set: function (value) {
-                    object.offsetSet(propertyName, value);
-                }
-            });
-            if (property.type === property_1.Property.SINGLE_RELATIONSHIP_TYPE || property.type === property_1.Property.COLLECTION_RELATIONSHIP_TYPE) {
-                Object.defineProperty(object, propertyName + 'Loaded', {
-                    get: function () {
-                        object.offsetGet(propertyName);
-                        return object.offsetLoadedEvent(propertyName);
-                    }
-                });
-            }
-        };
-        var this_1 = this;
         for (var propertyName in this._properties) {
-            _loop_1(propertyName);
+            this.registerAccessesorsForProperty(object, propertyName);
         }
     };
     Type.prototype.getPayloadTemplate = function () {
         var payload = {
             type: this.getTypeName(),
             attributes: {},
-            relationships: {}
+            relationships: {},
+            links: {},
+            meta: {}
         };
-        for (var propertyName in this._properties) {
-            switch (this._properties[propertyName].type) {
-                case property_1.Property.ATTRIBUTE_TYPE:
-                    payload.attributes[propertyName] = null;
+        var propertyChanged = new core_1.EventEmitter();
+        Object.defineProperty(payload, 'propertyChanged', {
+            value: propertyChanged,
+            enumerable: false,
+            writable: false
+        });
+        for (var propertyName in this.getProperties()) {
+            var property = this.getPropertyDefinition(propertyName);
+            switch (property.type) {
+                case _1.Property.ATTRIBUTE_TYPE:
+                    payload.attributes[property.name] = null;
                     break;
-                case property_1.Property.SINGLE_RELATIONSHIP_TYPE:
-                    payload.relationships[propertyName] = { data: null };
+                case _1.Property.SINGLE_RELATIONSHIP_TYPE:
+                    payload.relationships[property.name] = {
+                        data: null
+                    };
                     break;
-                case property_1.Property.COLLECTION_RELATIONSHIP_TYPE:
-                    payload.relationships[propertyName] = { data: [] };
+                case _1.Property.COLLECTION_RELATIONSHIP_TYPE:
+                    payload.relationships[property.name] = {
+                        data: []
+                    };
                     break;
             }
         }
         return payload;
+    };
+    Type.prototype.registerAccessesorsForProperty = function (object, propertyName) {
+        var property = this._properties[propertyName];
+        Object.defineProperty(object, propertyName, {
+            get: function () {
+                return object.offsetGet(propertyName);
+            },
+            set: function (value) {
+                return object.offsetSet(propertyName, value);
+            }
+        });
+        if (property.type === _1.Property.SINGLE_RELATIONSHIP_TYPE || property.type === _1.Property.COLLECTION_RELATIONSHIP_TYPE) {
+            Object.defineProperty(object, propertyName + 'Loaded', {
+                get: function () {
+                    return object.offsetGetLoaded(propertyName);
+                }
+            });
+            Object.defineProperty(object, propertyName + 'Async', {
+                get: function () {
+                    return object.offsetGetAsync(propertyName);
+                }
+            });
+        }
     };
     return Type;
 }());

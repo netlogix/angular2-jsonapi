@@ -1,8 +1,4 @@
-import { PropertyInterface } from "./property";
-import { Uri } from "./uri";
-import { ConsumerBackend } from "../../service/consumer-backend";
-import { ResourceProxy } from "./resource-proxy";
-import { Payload } from "./payload";
+import { ConsumerBackend, Payload, PropertyInterface, ResourceProxy, Uri } from "../../";
 export declare class Type {
     private _typeName;
     private _resourceProxy;
@@ -16,11 +12,12 @@ export declare class Type {
     getUri(): Uri;
     getTypeName(): string;
     getResourceProxy(): any;
-    createNewObject(consumerBackend: ConsumerBackend): any;
+    createNewObject(consumerBackend: ConsumerBackend, initializeEmptyRelationships?: boolean): any;
     getPropertyDefinition(propertyName: string): PropertyInterface;
     getProperties(): {
         [propertyName: string]: PropertyInterface;
     };
     registerAccessesors(object: ResourceProxy): void;
     getPayloadTemplate(): Payload;
+    private registerAccessesorsForProperty(object, propertyName);
 }
