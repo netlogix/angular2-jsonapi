@@ -33,19 +33,21 @@ var ConsumerBackend = (function () {
                     if (!link.href) {
                         continue;
                     }
-                    var typeName = link.meta.resourceType;
-                    var type = _this.types[typeName];
-                    if (!type || type.getUri()) {
-                        continue;
-                    }
-                    var typeObservable = _this.getType(typeName);
-                    type.setUri(new _1.Uri(link.href));
-                    typeObservable.next(type);
-                    typeObservable.complete();
+                    _this.registerEndpoint(link.meta.resourceType, link.href);
                 }
                 resolve();
             });
         });
+    };
+    ConsumerBackend.prototype.registerEndpoint = function (typeName, href) {
+        var type = this.types[typeName];
+        if (!type || type.getUri()) {
+            return;
+        }
+        var typeObservable = this.getType(typeName);
+        type.setUri(new _1.Uri(href));
+        typeObservable.next(type);
+        typeObservable.complete();
     };
     ConsumerBackend.prototype.closeEndpointDiscovery = function () {
         for (var typeName in this.types) {

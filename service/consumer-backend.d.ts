@@ -20,6 +20,7 @@ export declare class ConsumerBackend {
     constructor(http: Http, requestOptions: RequestOptions);
     addType(type: Type): void;
     registerEndpointsByEndpointDiscovery(endpointDiscovery: Uri): Promise<any>;
+    registerEndpoint(typeName: string, href: string): void;
     closeEndpointDiscovery(): void;
     fetchFromUri(queryUri: Uri): Observable<ResourceProxy[]>;
     findByTypeAndFilter(typeName: string, filter?: {
