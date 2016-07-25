@@ -6,6 +6,7 @@ var ConsumerBackend = (function () {
     function ConsumerBackend(http, requestOptions) {
         this.http = http;
         this.requestOptions = requestOptions;
+        this.contentType = 'application/vnd.api+json';
         this.types = {};
         this.typeObservables = {};
         this.headers = {};
@@ -243,9 +244,9 @@ var ConsumerBackend = (function () {
         });
         switch (method.toLocaleLowerCase()) {
             case 'post':
-                requestOptions.headers.set('Content-Type', ConsumerBackend.contentType);
+                requestOptions.headers.set('Content-Type', this.contentType);
             case 'get':
-                requestOptions.headers.set('Accept', ConsumerBackend.contentType);
+                requestOptions.headers.set('Accept', this.contentType);
                 break;
         }
         if (requestUri) {
@@ -259,7 +260,6 @@ var ConsumerBackend = (function () {
         }
         return requestOptions;
     };
-    ConsumerBackend.contentType = 'application/vnd.api+json';
     return ConsumerBackend;
 }());
 exports.ConsumerBackend = ConsumerBackend;

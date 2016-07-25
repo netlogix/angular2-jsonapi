@@ -4,7 +4,7 @@ import { ResourceProxy, Type, Uri, Payload } from "../";
 export declare class ConsumerBackend {
     protected http: Http;
     protected requestOptions: RequestOptions;
-    protected static contentType: string;
+    contentType: string;
     protected types: {};
     protected typeObservables: {
         [typeName: string]: AsyncSubject<Type>;
