@@ -5,8 +5,7 @@ export declare abstract class ResourceProxy {
     static _properties: any;
     private _type;
     private _payload;
-    private _relatedDataLoadedSubject;
-    private _relatedDataLoadedObservable;
+    private _relationshipLoadedSubject;
     $type: Type;
     $identity: {
         id: string;
@@ -32,5 +31,4 @@ export declare abstract class ResourceProxy {
     private registerEventEmitters();
     private emitRelationshipLoaded(propertyName);
     private getRelationshipLoadedSubject(propertyName);
-    private getRelationshipLoadedObservable(propertyName);
 }

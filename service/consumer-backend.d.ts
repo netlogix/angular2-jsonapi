@@ -1,13 +1,13 @@
 import { Http, RequestOptions } from '@angular/http';
-import { Observable, AsyncSubject } from "rxjs/Rx";
+import { Observable, ReplaySubject } from "rxjs/Rx";
 import { ResourceProxy, Type, Uri, Payload } from "../";
 export declare class ConsumerBackend {
     protected http: Http;
     protected requestOptions: RequestOptions;
-    contentType: string;
+    protected static contentType: string;
     protected types: {};
     protected typeObservables: {
-        [typeName: string]: AsyncSubject<Type>;
+        [typeName: string]: ReplaySubject<Type>;
     };
     protected headers: {
         [uriPattern: string]: {
@@ -20,7 +20,6 @@ export declare class ConsumerBackend {
     constructor(http: Http, requestOptions: RequestOptions);
     addType(type: Type): void;
     registerEndpointsByEndpointDiscovery(endpointDiscovery: Uri): Promise<any>;
-    registerEndpoint(typeName: string, href: string): void;
     closeEndpointDiscovery(): void;
     fetchFromUri(queryUri: Uri): Observable<ResourceProxy[]>;
     findByTypeAndFilter(typeName: string, filter?: {
@@ -31,7 +30,7 @@ export declare class ConsumerBackend {
     create(type: string, id: string, defaultValue?: {
         [key: string]: any;
     }, initializeEmptyRelationships?: boolean): ResourceProxy;
-    protected getType(typeName: string): AsyncSubject<Type>;
+    protected getType(typeName: string): ReplaySubject<Type>;
     protected requestJson(uri: Uri): Observable<any>;
     protected addJsonResultToCache(result: any, initializeEmptyRelationships?: boolean): void;
     protected assignResourceDefinitionToPayload(payload: Payload, resourceDefinition: Payload, type: Type): (any[]);

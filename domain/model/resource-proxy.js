@@ -3,8 +3,7 @@ var Rx_1 = require("rxjs/Rx");
 var _1 = require("../../");
 var ResourceProxy = (function () {
     function ResourceProxy() {
-        this._relatedDataLoadedSubject = {};
-        this._relatedDataLoadedObservable = {};
+        this._relationshipLoadedSubject = {};
         this.registerTypeName();
         this._type.registerAccessesors(this);
         this.payload = this._type.getPayloadTemplate();
@@ -73,18 +72,7 @@ var ResourceProxy = (function () {
         });
     };
     ResourceProxy.prototype.offsetGetAsync = function (propertyName) {
-        var _this = this;
-        return new Rx_1.Observable(function (observable) {
-            try {
-                observable.next(_this.offsetGet(propertyName));
-            }
-            catch (e) {
-                var subscription_2 = _this.getRelationshipLoadedSubject(propertyName).subscribe(function () {
-                    subscription_2.unsubscribe();
-                    observable.next(_this.offsetGet(propertyName));
-                });
-            }
-        });
+        return this.getRelationshipLoadedSubject(propertyName).asObservable();
     };
     ResourceProxy.prototype.offsetSet = function (propertyName, value) {
         var property = this._type.getPropertyDefinition(propertyName);
@@ -206,8 +194,7 @@ var ResourceProxy = (function () {
             switch (property.type) {
                 case _1.Property.SINGLE_RELATIONSHIP_TYPE:
                 case _1.Property.COLLECTION_RELATIONSHIP_TYPE:
-                    this._relatedDataLoadedSubject[property.name] = new Rx_1.AsyncSubject();
-                    this._relatedDataLoadedObservable[property.name] = this._relatedDataLoadedSubject[property.name].asObservable();
+                    this._relationshipLoadedSubject[property.name] = new Rx_1.ReplaySubject(1);
                     try {
                         this.offsetGet(propertyName);
                         this.emitRelationshipLoaded(propertyName);
@@ -222,10 +209,7 @@ var ResourceProxy = (function () {
         this.getRelationshipLoadedSubject(this._type.getPropertyDefinition(propertyName).name).next(this.offsetGet(propertyName));
     };
     ResourceProxy.prototype.getRelationshipLoadedSubject = function (propertyName) {
-        return this._relatedDataLoadedSubject[propertyName];
-    };
-    ResourceProxy.prototype.getRelationshipLoadedObservable = function (propertyName) {
-        return this._relatedDataLoadedObservable[propertyName];
+        return this._relationshipLoadedSubject[propertyName];
     };
     ResourceProxy._typeName = 'netlogix/resource';
     ResourceProxy._properties = {};
