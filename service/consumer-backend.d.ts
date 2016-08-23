@@ -4,7 +4,7 @@ import { ResourceProxy, Type, Uri, Payload } from "../";
 export declare class ConsumerBackend {
     protected http: Http;
     protected requestOptions: RequestOptions;
-    protected static contentType: string;
+    contentType: string;
     protected types: {};
     protected typeObservables: {
         [typeName: string]: ReplaySubject<Type>;
@@ -20,6 +20,7 @@ export declare class ConsumerBackend {
     constructor(http: Http, requestOptions: RequestOptions);
     addType(type: Type): void;
     registerEndpointsByEndpointDiscovery(endpointDiscovery: Uri): Promise<any>;
+    registerEndpoint(typeName: string, href: string): void;
     closeEndpointDiscovery(): void;
     fetchFromUri(queryUri: Uri): Observable<ResourceProxy[]>;
     findByTypeAndFilter(typeName: string, filter?: {

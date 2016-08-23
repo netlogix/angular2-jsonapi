@@ -6,6 +6,7 @@ var ConsumerBackend = (function () {
     function ConsumerBackend(http, requestOptions) {
         this.http = http;
         this.requestOptions = requestOptions;
+        this.contentType = 'application/vnd.api+json';
         this.types = {};
         this.typeObservables = {};
         this.headers = {};
@@ -33,19 +34,21 @@ var ConsumerBackend = (function () {
                     if (!link.href) {
                         continue;
                     }
-                    var typeName = link.meta.resourceType;
-                    var type = _this.types[typeName];
-                    if (!type || type.getUri()) {
-                        continue;
-                    }
-                    var typeObservable = _this.getType(typeName);
-                    type.setUri(new _1.Uri(link.href));
-                    typeObservable.next(type);
-                    typeObservable.complete();
+                    _this.registerEndpoint(link.meta.resourceType, link.href);
                 }
                 resolve();
             });
         });
+    };
+    ConsumerBackend.prototype.registerEndpoint = function (typeName, href) {
+        var type = this.types[typeName];
+        if (!type || type.getUri()) {
+            return;
+        }
+        var typeObservable = this.getType(typeName);
+        type.setUri(new _1.Uri(href));
+        typeObservable.next(type);
+        typeObservable.complete();
     };
     ConsumerBackend.prototype.closeEndpointDiscovery = function () {
         for (var typeName in this.types) {
@@ -241,9 +244,9 @@ var ConsumerBackend = (function () {
         });
         switch (method.toLocaleLowerCase()) {
             case 'post':
-                requestOptions.headers.set('Content-Type', ConsumerBackend.contentType);
+                requestOptions.headers.set('Content-Type', this.contentType);
             case 'get':
-                requestOptions.headers.set('Accept', ConsumerBackend.contentType);
+                requestOptions.headers.set('Accept', this.contentType);
                 break;
         }
         if (requestUri) {
@@ -257,7 +260,6 @@ var ConsumerBackend = (function () {
         }
         return requestOptions;
     };
-    ConsumerBackend.contentType = 'application/vnd.api+json';
     return ConsumerBackend;
 }());
 exports.ConsumerBackend = ConsumerBackend;
