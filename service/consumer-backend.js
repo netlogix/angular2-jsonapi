@@ -2,6 +2,7 @@
 var http_1 = require('@angular/http');
 var Rx_1 = require("rxjs/Rx");
 var _1 = require("../");
+var result_page_1 = require("../domain/model/result-page");
 var ConsumerBackend = (function () {
     function ConsumerBackend(http, requestOptions) {
         this.http = http;
@@ -65,14 +66,13 @@ var ConsumerBackend = (function () {
         var _this = this;
         return this.requestJson(queryUri).map(function (jsonResult) {
             _this.addJsonResultToCache(jsonResult);
+            var result = [];
             if (!jsonResult.data) {
-                return [];
             }
-            if (!!jsonResult.data.type && !!jsonResult.data.id) {
-                return [_this.getFromUnitOfWork(jsonResult.data.type, jsonResult.data.id)];
+            else if (!!jsonResult.data.type && !!jsonResult.data.id) {
+                result = [_this.getFromUnitOfWork(jsonResult.data.type, jsonResult.data.id)];
             }
             else {
-                var result = [];
                 for (var _i = 0, _a = jsonResult['data']; _i < _a.length; _i++) {
                     var resourceDefinition = _a[_i];
                     var resource = _this.getFromUnitOfWork(resourceDefinition.type, resourceDefinition.id);
@@ -80,11 +80,16 @@ var ConsumerBackend = (function () {
                         result.push(resource);
                     }
                 }
-                return result;
             }
+            return new result_page_1.ResultPage(result, jsonResult.links);
         });
     };
-    ConsumerBackend.prototype.findByTypeAndFilter = function (typeName, filter, include) {
+    ConsumerBackend.prototype.fetchContentFromUri = function (queryUri) {
+        return this.fetchFromUri(queryUri).map(function (resultPage) {
+            return resultPage.data;
+        });
+    };
+    ConsumerBackend.prototype.findResultPageByTypeAndFilter = function (typeName, filter, include) {
         var _this = this;
         return this.getType(typeName).map(function (type) {
             var queryUri = type.getUri();
@@ -103,6 +108,11 @@ var ConsumerBackend = (function () {
             queryUri.setArguments(queryArguments);
             return _this.fetchFromUri(queryUri);
         }).flatMap(function (value) { return value; });
+    };
+    ConsumerBackend.prototype.findByTypeAndFilter = function (typeName, filter, include) {
+        return this.findResultPageByTypeAndFilter(typeName, filter, include).map(function (resultPage) {
+            return resultPage.data;
+        });
     };
     ConsumerBackend.prototype.getFromUnitOfWork = function (type, id) {
         var cacheIdentifier = this.calculateCacheIdentifier(type, id);

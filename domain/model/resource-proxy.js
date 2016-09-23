@@ -105,7 +105,7 @@ var ResourceProxy = (function () {
                 }
                 break;
         }
-        return this._type.consumerBackend.fetchFromUri(this._payload['relationships'][property.name]['links']['related']).map(function (results) {
+        return this._type.consumerBackend.fetchContentFromUri(this._payload['relationships'][property.name]['links']['related']).map(function (results) {
             switch (property.type) {
                 case _1.Property.COLLECTION_RELATIONSHIP_TYPE:
                     _this._payload['relationships'][property.name]['data'] = [];
