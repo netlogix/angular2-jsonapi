@@ -36,6 +36,7 @@ export declare class ConsumerBackend {
     create(type: string, id: string, defaultValue?: {
         [key: string]: any;
     }, initializeEmptyRelationships?: boolean): ResourceProxy;
+    getResourceType(typeName: string): Observable<Type>;
     protected getType(typeName: string): ReplaySubject<Type>;
     protected requestJson(uri: Uri): Observable<any>;
     protected addJsonResultToCache(result: any, initializeEmptyRelationships?: boolean): void;
