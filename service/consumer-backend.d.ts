@@ -1,6 +1,7 @@
 import { Http, RequestOptions } from '@angular/http';
 import { Observable, ReplaySubject } from "rxjs/Rx";
 import { ResourceProxy, Type, Uri, Payload } from "../";
+import { ResultPage } from "../domain/model/result-page";
 export declare class ConsumerBackend {
     protected http: Http;
     protected requestOptions: RequestOptions;
@@ -22,7 +23,11 @@ export declare class ConsumerBackend {
     registerEndpointsByEndpointDiscovery(endpointDiscovery: Uri): Promise<any>;
     registerEndpoint(typeName: string, href: string): void;
     closeEndpointDiscovery(): void;
-    fetchFromUri(queryUri: Uri): Observable<ResourceProxy[]>;
+    fetchFromUri(queryUri: Uri): Observable<ResultPage>;
+    fetchContentFromUri(queryUri: Uri): Observable<ResourceProxy[]>;
+    findResultPageByTypeAndFilter(typeName: string, filter?: {
+        [key: string]: any;
+    }, include?: string[]): Observable<ResultPage>;
     findByTypeAndFilter(typeName: string, filter?: {
         [key: string]: any;
     }, include?: string[]): Observable<ResourceProxy[]>;
