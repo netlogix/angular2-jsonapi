@@ -140,6 +140,9 @@ var ConsumerBackend = (function () {
         }
         return result;
     };
+    ConsumerBackend.prototype.getResourceType = function (typeName) {
+        return this.getType(typeName).asObservable();
+    };
     ConsumerBackend.prototype.getType = function (typeName) {
         if (!this.typeObservables[typeName]) {
             this.typeObservables[typeName] = new Rx_1.ReplaySubject(1);
