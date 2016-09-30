@@ -1,7 +1,6 @@
 import { Http, RequestOptions } from '@angular/http';
 import { Observable, ReplaySubject } from "rxjs/Rx";
-import { ResourceProxy, Type, Uri, Payload } from "../";
-import { ResultPage } from "../domain/model/result-page";
+import { ResourceProxy, Type, Uri, Payload, ResultPage } from "../";
 export declare class ConsumerBackend {
     protected http: Http;
     protected requestOptions: RequestOptions;

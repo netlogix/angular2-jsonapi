@@ -6,8 +6,8 @@ export declare abstract class ResourceProxy {
     private _type;
     private _payload;
     private _relationshipLoadedSubject;
-    $type: Type;
-    $identity: {
+    readonly $type: Type;
+    readonly $identity: {
         id: string;
         type: string;
     };

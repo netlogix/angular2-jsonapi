@@ -1,12 +1,12 @@
 "use strict";
-var paginator_1 = require('./paginator');
+var _1 = require("../../");
 var LoadMorePaginator = (function () {
     function LoadMorePaginator(firstPage, consumerBackend) {
         var _this = this;
         this.firstPage = firstPage;
         this.consumerBackend = consumerBackend;
         this._data = [];
-        this.paginator = new paginator_1.Paginator(firstPage, consumerBackend);
+        this.paginator = new _1.Paginator(firstPage, consumerBackend);
         this.paginator.resultPage$.subscribe(function (resultPage) {
             _this._data = _this._data.concat(resultPage.data);
         });

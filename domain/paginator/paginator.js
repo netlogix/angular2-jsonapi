@@ -1,6 +1,6 @@
 "use strict";
-var jsonapi_1 = require("@netlogix/jsonapi");
 var rxjs_1 = require('rxjs');
+var _1 = require("../../");
 var Paginator = (function () {
     function Paginator(firstPage, consumerBackend) {
         var _this = this;
@@ -44,7 +44,7 @@ var Paginator = (function () {
         if (this.hasLink('next')) {
             nextLink = this.resultPage.links['next'];
         }
-        this.consumerBackend.fetchFromUri(new jsonapi_1.Uri(nextLink)).subscribe(function (resultPage) {
+        this.consumerBackend.fetchFromUri(new _1.Uri(nextLink)).subscribe(function (resultPage) {
             _this.subject.next(resultPage);
         });
     };

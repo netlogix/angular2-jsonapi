@@ -2,7 +2,6 @@
 var http_1 = require('@angular/http');
 var Rx_1 = require("rxjs/Rx");
 var _1 = require("../");
-var result_page_1 = require("../domain/model/result-page");
 var ConsumerBackend = (function () {
     function ConsumerBackend(http, requestOptions) {
         this.http = http;
@@ -81,7 +80,7 @@ var ConsumerBackend = (function () {
                     }
                 }
             }
-            return new result_page_1.ResultPage(result, jsonResult.links);
+            return new _1.ResultPage(result, jsonResult.links);
         });
     };
     ConsumerBackend.prototype.fetchContentFromUri = function (queryUri) {
@@ -243,8 +242,7 @@ var ConsumerBackend = (function () {
             }
         };
         for (var propertyName in type.getProperties()) {
-            var state_2 = _loop_2(propertyName);
-            if (state_2 === "continue") continue;
+            _loop_2(propertyName);
         }
         return postProcessing;
     };
