@@ -17,6 +17,20 @@ var LoadMorePaginator = (function () {
         }
         return this._data;
     };
+    Object.defineProperty(LoadMorePaginator.prototype, "loading", {
+        get: function () {
+            return this.paginator.loading;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(LoadMorePaginator.prototype, "loading$", {
+        get: function () {
+            return this.paginator.loading$;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Object.defineProperty(LoadMorePaginator.prototype, "hasMore", {
         get: function () {
             return this.paginator.hasNext;

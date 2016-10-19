@@ -32,6 +32,7 @@ export declare class ConsumerBackend {
     }, include?: string[]): Observable<ResourceProxy[]>;
     getFromUnitOfWork(type: string, id: string): ResourceProxy;
     add(resource: ResourceProxy): Promise<any>;
+    addToUri(resource: ResourceProxy, targetUri: string): Promise<{}>;
     create(type: string, id: string, defaultValue?: {
         [key: string]: any;
     }, initializeEmptyRelationships?: boolean): ResourceProxy;
