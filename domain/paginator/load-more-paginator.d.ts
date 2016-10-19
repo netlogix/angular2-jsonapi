@@ -1,12 +1,14 @@
-import { ResourceProxy, ConsumerBackend } from "@netlogix/jsonapi";
-import { Paginator } from './paginator';
+import { Observable } from 'rxjs';
+import { ResourceProxy, ConsumerBackend, Paginator } from "../../";
 export declare class LoadMorePaginator {
     protected firstPage: string;
     protected consumerBackend: ConsumerBackend;
     protected paginator: Paginator;
     protected _data: ResourceProxy[];
     constructor(firstPage: string, consumerBackend: ConsumerBackend);
-    more(): any[];
+    more(): ResourceProxy[];
+    loading: boolean;
+    loading$: Observable<boolean>;
     hasMore: boolean;
     data: ResourceProxy[];
 }

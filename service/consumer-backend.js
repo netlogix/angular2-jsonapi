@@ -2,7 +2,6 @@
 var http_1 = require('@angular/http');
 var Rx_1 = require("rxjs/Rx");
 var _1 = require("../");
-var result_page_1 = require("../domain/model/result-page");
 var ConsumerBackend = (function () {
     function ConsumerBackend(http, requestOptions) {
         this.http = http;
@@ -81,7 +80,7 @@ var ConsumerBackend = (function () {
                     }
                 }
             }
-            return new result_page_1.ResultPage(result, jsonResult.links);
+            return new _1.ResultPage(result, jsonResult.links);
         });
     };
     ConsumerBackend.prototype.fetchContentFromUri = function (queryUri) {
@@ -119,10 +118,13 @@ var ConsumerBackend = (function () {
         return this.unitOfWork[cacheIdentifier];
     };
     ConsumerBackend.prototype.add = function (resource) {
+        var targetUri = resource.$type.getUri().toString();
+        return this.addToUri(resource, targetUri);
+    };
+    ConsumerBackend.prototype.addToUri = function (resource, targetUri) {
         var _this = this;
         return new Promise(function (resolve, reject) {
             var postBody = JSON.stringify({ data: resource.payload });
-            var targetUri = resource.$type.getUri().toString();
             _this.http.post(targetUri, postBody, _this.getRequestOptions('post')).subscribe(function (response) {
                 resolve(response);
             }, function (response) {

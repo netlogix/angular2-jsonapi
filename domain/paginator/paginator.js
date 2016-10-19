@@ -1,11 +1,13 @@
 "use strict";
-var jsonapi_1 = require("@netlogix/jsonapi");
 var rxjs_1 = require('rxjs');
+var _1 = require("../../");
 var Paginator = (function () {
     function Paginator(firstPage, consumerBackend) {
         var _this = this;
         this.firstPage = firstPage;
         this.consumerBackend = consumerBackend;
+        this._loading = 0;
+        this.loadingChange = new rxjs_1.Subject();
         this.subject = new rxjs_1.ReplaySubject(1);
         this.resultPage$.subscribe(function (resultPage) {
             _this.resultPage = resultPage;
@@ -31,6 +33,20 @@ var Paginator = (function () {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(Paginator.prototype, "loading", {
+        get: function () {
+            return !!this._loading;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(Paginator.prototype, "loading$", {
+        get: function () {
+            return this.loadingChange.asObservable();
+        },
+        enumerable: true,
+        configurable: true
+    });
     Object.defineProperty(Paginator.prototype, "hasNext", {
         get: function () {
             return this.hasLink('next');
@@ -40,13 +56,27 @@ var Paginator = (function () {
     });
     Paginator.prototype.next = function () {
         var _this = this;
+        if (this.loading) {
+            return;
+        }
+        this.changeLoading(1);
         var nextLink = this.firstPage;
         if (this.hasLink('next')) {
             nextLink = this.resultPage.links['next'];
         }
-        this.consumerBackend.fetchFromUri(new jsonapi_1.Uri(nextLink)).subscribe(function (resultPage) {
+        this.consumerBackend.fetchFromUri(new _1.Uri(nextLink)).subscribe(function (resultPage) {
             _this.subject.next(resultPage);
+            _this.changeLoading(-1);
+        }, function () {
+            _this.changeLoading(-1);
         });
+    };
+    Paginator.prototype.changeLoading = function (direction) {
+        var loading = this.loading;
+        this._loading += direction;
+        if (loading !== this.loading) {
+            this.loadingChange.next(this.loading);
+        }
     };
     Paginator.prototype.hasLink = function (linkName) {
         return !!this.resultPage && !!this.resultPage.links && !!this.resultPage.links[linkName];
