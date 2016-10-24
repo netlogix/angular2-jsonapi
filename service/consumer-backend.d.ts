@@ -5,14 +5,14 @@ export declare class ConsumerBackend {
     protected http: Http;
     protected requestOptions: RequestOptions;
     contentType: string;
-    protected types: {};
-    protected typeObservables: {
-        [typeName: string]: ReplaySubject<Type>;
-    };
-    protected headers: {
+    headers: {
         [uriPattern: string]: {
             [header: string]: string;
         };
+    };
+    protected types: {};
+    protected typeObservables: {
+        [typeName: string]: ReplaySubject<Type>;
     };
     protected unitOfWork: {
         [cacheIdentifier: string]: ResourceProxy;

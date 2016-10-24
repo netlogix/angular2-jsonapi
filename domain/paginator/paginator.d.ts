@@ -8,11 +8,11 @@ export declare class Paginator {
     protected _loading: number;
     protected loadingChange: Subject<boolean>;
     constructor(firstPage: string, consumerBackend: ConsumerBackend);
-    resultPage$: Observable<ResultPage>;
-    data: ResourceProxy[];
-    loading: boolean;
-    loading$: Observable<boolean>;
-    hasNext: boolean;
+    readonly resultPage$: Observable<ResultPage>;
+    readonly data: ResourceProxy[];
+    readonly loading: boolean;
+    readonly loading$: Observable<boolean>;
+    readonly hasNext: boolean;
     next(): void;
     protected changeLoading(direction: number): void;
     protected hasLink(linkName: string): boolean;

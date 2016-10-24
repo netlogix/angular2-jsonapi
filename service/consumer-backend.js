@@ -7,9 +7,9 @@ var ConsumerBackend = (function () {
         this.http = http;
         this.requestOptions = requestOptions;
         this.contentType = 'application/vnd.api+json';
+        this.headers = {};
         this.types = {};
         this.typeObservables = {};
-        this.headers = {};
         this.unitOfWork = {};
     }
     ConsumerBackend.prototype.addType = function (type) {
@@ -245,8 +245,7 @@ var ConsumerBackend = (function () {
             }
         };
         for (var propertyName in type.getProperties()) {
-            var state_2 = _loop_2(propertyName);
-            if (state_2 === "continue") continue;
+            _loop_2(propertyName);
         }
         return postProcessing;
     };
