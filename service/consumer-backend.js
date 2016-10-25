@@ -125,7 +125,7 @@ var ConsumerBackend = (function () {
         var _this = this;
         return new Promise(function (resolve, reject) {
             var postBody = JSON.stringify({ data: resource.payload });
-            _this.http.post(targetUri, postBody, _this.getRequestOptions('post')).subscribe(function (response) {
+            _this.http.post(targetUri, postBody, _this.getRequestOptions('post', targetUri)).subscribe(function (response) {
                 resolve(response);
             }, function (response) {
                 reject(response);

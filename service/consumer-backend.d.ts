@@ -42,5 +42,5 @@ export declare class ConsumerBackend {
     protected addJsonResultToCache(result: any, initializeEmptyRelationships?: boolean): void;
     protected assignResourceDefinitionToPayload(payload: Payload, resourceDefinition: Payload, type: Type): (any[]);
     protected calculateCacheIdentifier(type: string, id: string): string;
-    protected getRequestOptions(method: string, requestUri?: string): RequestOptions;
+    protected getRequestOptions(method: string, requestUri: string): RequestOptions;
 }
