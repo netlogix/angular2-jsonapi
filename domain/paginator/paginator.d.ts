@@ -6,11 +6,13 @@ export declare class Paginator {
     protected resultPage: ResultPage;
     protected subject: ReplaySubject<any>;
     protected _loading: number;
+    protected _error: boolean;
     protected loadingChange: Subject<boolean>;
     constructor(firstPage: string, consumerBackend: ConsumerBackend);
     readonly resultPage$: Observable<ResultPage>;
     readonly data: ResourceProxy[];
     readonly loading: boolean;
+    readonly error: boolean;
     readonly loading$: Observable<boolean>;
     readonly hasNext: boolean;
     next(): void;

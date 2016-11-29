@@ -1,5 +1,7 @@
 "use strict";
 var _1 = require("../../");
+var noop = function () {
+};
 var LoadMorePaginator = (function () {
     function LoadMorePaginator(firstPage, consumerBackend) {
         var _this = this;
@@ -9,7 +11,7 @@ var LoadMorePaginator = (function () {
         this.paginator = new _1.Paginator(firstPage, consumerBackend);
         this.paginator.resultPage$.subscribe(function (resultPage) {
             _this._data = _this._data.concat(resultPage.data);
-        });
+        }, noop);
     }
     LoadMorePaginator.prototype.more = function () {
         if (this.hasMore) {
@@ -20,6 +22,13 @@ var LoadMorePaginator = (function () {
     Object.defineProperty(LoadMorePaginator.prototype, "loading", {
         get: function () {
             return this.paginator.loading;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    Object.defineProperty(LoadMorePaginator.prototype, "error", {
+        get: function () {
+            return this.paginator.error;
         },
         enumerable: true,
         configurable: true

@@ -7,6 +7,7 @@ var Paginator = (function () {
         this.firstPage = firstPage;
         this.consumerBackend = consumerBackend;
         this._loading = 0;
+        this._error = false;
         this.loadingChange = new rxjs_1.Subject();
         this.subject = new rxjs_1.ReplaySubject(1);
         this.resultPage$.subscribe(function (resultPage) {
@@ -16,7 +17,7 @@ var Paginator = (function () {
     }
     Object.defineProperty(Paginator.prototype, "resultPage$", {
         get: function () {
-            return this.subject.asObservable();
+            return this.subject.asObservable().share();
         },
         enumerable: true,
         configurable: true
@@ -40,6 +41,13 @@ var Paginator = (function () {
         enumerable: true,
         configurable: true
     });
+    Object.defineProperty(Paginator.prototype, "error", {
+        get: function () {
+            return !!this._error;
+        },
+        enumerable: true,
+        configurable: true
+    });
     Object.defineProperty(Paginator.prototype, "loading$", {
         get: function () {
             return this.loadingChange.asObservable();
@@ -56,7 +64,7 @@ var Paginator = (function () {
     });
     Paginator.prototype.next = function () {
         var _this = this;
-        if (this.loading) {
+        if (this.loading || this.error) {
             return;
         }
         this.changeLoading(1);
@@ -68,6 +76,8 @@ var Paginator = (function () {
             _this.subject.next(resultPage);
             _this.changeLoading(-1);
         }, function () {
+            _this._error = true;
+            _this.subject.next([]);
             _this.changeLoading(-1);
         });
     };
