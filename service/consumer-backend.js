@@ -1,5 +1,5 @@
 "use strict";
-var http_1 = require('@angular/http');
+var http_1 = require("@angular/http");
 var Rx_1 = require("rxjs/Rx");
 var _1 = require("../");
 var ConsumerBackend = (function () {
@@ -175,7 +175,7 @@ var ConsumerBackend = (function () {
             else {
                 slotContent = result[slotName];
             }
-            var _loop_1 = function(resourceDefinition) {
+            var _loop_1 = function (resourceDefinition) {
                 var typeName = resourceDefinition.type;
                 var id = resourceDefinition.id;
                 this_1.getType(typeName).subscribe(function (type) {
@@ -207,7 +207,7 @@ var ConsumerBackend = (function () {
         if (resourceDefinition.hasOwnProperty('meta')) {
             payload.meta = Object.assign(payload.meta, resourceDefinition.meta);
         }
-        var _loop_2 = function(propertyName) {
+        var _loop_2 = function (propertyName) {
             var property = type.getPropertyDefinition(propertyName);
             if (property.type === _1.Property.ATTRIBUTE_TYPE) {
                 if (!resourceDefinition.hasOwnProperty('attributes')) {

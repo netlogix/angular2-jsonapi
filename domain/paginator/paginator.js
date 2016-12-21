@@ -1,5 +1,5 @@
 "use strict";
-var rxjs_1 = require('rxjs');
+var rxjs_1 = require("rxjs");
 var _1 = require("../../");
 var Paginator = (function () {
     function Paginator(firstPage, consumerBackend) {

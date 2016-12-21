@@ -1,5 +1,5 @@
 "use strict";
-var core_1 = require('@angular/core');
+var core_1 = require("@angular/core");
 var _1 = require("../../");
 var Type = (function () {
     function Type(typeName, resourceProxy, properties, uri) {

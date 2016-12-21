@@ -211,9 +211,9 @@ var ResourceProxy = (function () {
     ResourceProxy.prototype.getRelationshipLoadedSubject = function (propertyName) {
         return this._relationshipLoadedSubject[propertyName];
     };
-    ResourceProxy._typeName = 'netlogix/resource';
-    ResourceProxy._properties = {};
     return ResourceProxy;
 }());
+ResourceProxy._typeName = 'netlogix/resource';
+ResourceProxy._properties = {};
 exports.ResourceProxy = ResourceProxy;
 //# sourceMappingURL=resource-proxy.js.map
