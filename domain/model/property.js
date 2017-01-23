@@ -46,11 +46,11 @@ var Property = (function () {
             };
         }
     };
+    Property.UNDEFINED_TYPE = null;
+    Property.ATTRIBUTE_TYPE = 'attribute';
+    Property.SINGLE_RELATIONSHIP_TYPE = 'single';
+    Property.COLLECTION_RELATIONSHIP_TYPE = 'collection';
     return Property;
 }());
-Property.UNDEFINED_TYPE = null;
-Property.ATTRIBUTE_TYPE = 'attribute';
-Property.SINGLE_RELATIONSHIP_TYPE = 'single';
-Property.COLLECTION_RELATIONSHIP_TYPE = 'collection';
 exports.Property = Property;
 //# sourceMappingURL=property.js.map

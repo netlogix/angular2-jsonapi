@@ -9,12 +9,12 @@ export declare class Paginator {
     protected _error: boolean;
     protected loadingChange: Subject<boolean>;
     constructor(firstPage: string, consumerBackend: ConsumerBackend);
-    readonly resultPage$: Observable<ResultPage>;
-    readonly data: ResourceProxy[];
-    readonly loading: boolean;
-    readonly error: boolean;
-    readonly loading$: Observable<boolean>;
-    readonly hasNext: boolean;
+    resultPage$: Observable<ResultPage>;
+    data: ResourceProxy[];
+    loading: boolean;
+    error: boolean;
+    loading$: Observable<boolean>;
+    hasNext: boolean;
     next(): void;
     protected changeLoading(direction: number): void;
     protected hasLink(linkName: string): boolean;

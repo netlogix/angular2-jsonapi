@@ -7,9 +7,9 @@ export declare class LoadMorePaginator {
     protected _data: ResourceProxy[];
     constructor(firstPage: string, consumerBackend: ConsumerBackend);
     more(): ResourceProxy[];
-    readonly loading: boolean;
-    readonly error: boolean;
-    readonly loading$: Observable<boolean>;
-    readonly hasMore: boolean;
-    readonly data: ResourceProxy[];
+    loading: boolean;
+    error: boolean;
+    loading$: Observable<boolean>;
+    hasMore: boolean;
+    data: ResourceProxy[];
 }

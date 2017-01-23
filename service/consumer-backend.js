@@ -1,5 +1,5 @@
 "use strict";
-var http_1 = require("@angular/http");
+var http_1 = require('@angular/http');
 var Rx_1 = require("rxjs/Rx");
 var _1 = require("../");
 var ConsumerBackend = (function () {
@@ -175,7 +175,7 @@ var ConsumerBackend = (function () {
             else {
                 slotContent = result[slotName];
             }
-            var _loop_1 = function (resourceDefinition) {
+            var _loop_1 = function(resourceDefinition) {
                 var typeName = resourceDefinition.type;
                 var id = resourceDefinition.id;
                 this_1.getType(typeName).subscribe(function (type) {
@@ -202,12 +202,12 @@ var ConsumerBackend = (function () {
     ConsumerBackend.prototype.assignResourceDefinitionToPayload = function (payload, resourceDefinition, type) {
         var postProcessing = [];
         if (resourceDefinition.hasOwnProperty('links')) {
-            payload.links = Object.assign(payload.links, resourceDefinition.links);
+            payload.links = resourceDefinition.links;
         }
         if (resourceDefinition.hasOwnProperty('meta')) {
-            payload.meta = Object.assign(payload.meta, resourceDefinition.meta);
+            payload.meta = resourceDefinition.meta;
         }
-        var _loop_2 = function (propertyName) {
+        var _loop_2 = function(propertyName) {
             var property = type.getPropertyDefinition(propertyName);
             if (property.type === _1.Property.ATTRIBUTE_TYPE) {
                 if (!resourceDefinition.hasOwnProperty('attributes')) {
@@ -245,7 +245,8 @@ var ConsumerBackend = (function () {
             }
         };
         for (var propertyName in type.getProperties()) {
-            _loop_2(propertyName);
+            var state_2 = _loop_2(propertyName);
+            if (state_2 === "continue") continue;
         }
         return postProcessing;
     };
