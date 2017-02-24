@@ -118,8 +118,17 @@ var ConsumerBackend = (function () {
         return this.unitOfWork[cacheIdentifier];
     };
     ConsumerBackend.prototype.add = function (resource) {
-        var targetUri = resource.$type.getUri().toString();
-        return this.addToUri(resource, targetUri);
+        var _this = this;
+        return new Promise(function (resolve, reject) {
+            _this.getType(resource.$type.getTypeName()).asObservable().subscribe(function () {
+                var targetUri = resource.$type.getUri().toString();
+                _this.addToUri(resource, targetUri).then(function (response) {
+                    resolve(response);
+                }).catch(function (error) {
+                    reject(error);
+                });
+            });
+        });
     };
     ConsumerBackend.prototype.addToUri = function (resource, targetUri) {
         var _this = this;
